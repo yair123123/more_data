@@ -8,12 +8,17 @@ from toolz.curried import partial
 
 
 
-a = {0: 'eventid', 1: 'year', 2: 'month', 3: 'day', 4: 'country', 5: 'city', 6: 'latitude', 7: 'longitude', 8: 'region',
- 9: 'target_type', 10: 'target1', 11: 'target_nationality', 12: 'group_name', 13: 'group_name2', 14: 'attacktype1_txt',
- 15: 'num_terrorists', 16: 'num_spread', 17: 'num_killed'}
+
 
 import pandas as pd
 import random
+
+def convert_unknown_to_none(val):
+    if isinstance(val, str) and val in ["unknown", "Unknown", "none", "None"]:
+        return None
+    elif isinstance(val, float) and pd.isna(val):  # טיפול ב-NaN
+        return None
+    return val
 
 
 def normalization(pd_data: pd.DataFrame) -> pd.DataFrame:
@@ -36,12 +41,13 @@ def normalization(pd_data: pd.DataFrame) -> pd.DataFrame:
     new_pd['target_type'] = None
     new_pd['target1'] = None
     new_pd['target_nationality'] = None
-    new_pd['Perpetrator'] = pd_data.get('Perpetrator', None)
+    new_pd['group_name'] = pd_data.get('Perpetrator', None)
     new_pd['group_name2'] = None
     new_pd['attacktype1_txt'] = pd_data.get('Weapon', None)
     new_pd['num_terrorists'] = None
-    new_pd['Description'] = pd_data.get('Description', None)
+    new_pd['summary'] = pd_data.get('Description', None)
     new_pd['num_spread'] = pd_data.get('Injuries', None)
     new_pd['num_killed'] = pd_data.get('Fatalities', None)
 
-    return new_pd
+
+    return  new_pd.applymap(convert_unknown_to_none)
