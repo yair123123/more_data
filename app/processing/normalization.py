@@ -12,18 +12,28 @@ from toolz.curried import partial
 
 import pandas as pd
 import random
+from geopy import Nominatim
 
 def convert_unknown_to_none(val):
     if isinstance(val, str) and val in ["unknown", "Unknown", "none", "None"]:
         return None
-    elif isinstance(val, float) and pd.isna(val):  # טיפול ב-NaN
+    elif isinstance(val, float) and pd.isna(val):
         return None
     return val
 
+def convert_address_to_points(address):
+    try:
+        geolocator = Nominatim(user_agent="geo_locator")
+        location = geolocator.geocode(address)
+        if location:
+            return location.latitude, location.longitude
+        return None
+    except Exception as e:
+        print(e)
+        return (None,None)
 
 def normalization(pd_data: pd.DataFrame) -> pd.DataFrame:
     pd_data['date'] = pd.to_datetime(pd_data['Date'], errors='coerce')
-
     pd_data['year'] = pd_data['date'].dt.year
     pd_data['month'] = pd_data['date'].dt.month
     pd_data['day'] = pd_data['date'].dt.day
@@ -35,8 +45,7 @@ def normalization(pd_data: pd.DataFrame) -> pd.DataFrame:
     new_pd['day'] = pd_data['day']
     new_pd['country'] = pd_data.get('Country', None)
     new_pd['city'] = pd_data.get('City', None)
-    new_pd['latitude'] = None
-    new_pd['longitude'] = None
+    pd_data["latitude"], pd_data["longitude"] = zip(*pd_data.apply(lambda row: convert_address_to_points(f"{row['City']}, {row['Country']}"), axis=1))
     new_pd['region'] = None
     new_pd['target_type'] = None
     new_pd['target1'] = None
